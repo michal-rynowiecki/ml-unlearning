@@ -8,7 +8,7 @@ Return a file path relative to the base repo location (ml-unlearning)
 '''
 def obtain_file_path(path:str) -> str:
     # Make the path be relative to the whole repo  
-    p = Path("../../" + path)
+    p = Path("../" + path)
 
     return p
 
@@ -18,11 +18,3 @@ Takes a .json line from a file and returns a dictionary of that line
 def line_to_dict(line: str) -> dict:
     line_dictionary = json.loads(line)
     return line_dictionary
-
-
-example_file = obtain_file_path('TOFU/forget01.json')
-
-with example_file.open() as f:
-    example_line = f.readline()
-    example_dict = line_to_dict(example_line)
-    print(example_dict)
