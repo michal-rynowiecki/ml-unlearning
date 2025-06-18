@@ -1,5 +1,9 @@
 import spacy
 import geonamescache
+import pandas as pd
+import numpy as np
+import gender_guesser.detector as gender
+import random
 
 '''
 The available tags can be 
@@ -95,3 +99,44 @@ def cities_countries(locations: list) -> list:
             location['type'] = 'city'
 
     return locations
+
+'''
+Creates a random name from provided path
+$ gender
+    m - men
+    f - female
+    TODO
+    n - other
+'''
+def random_name(source, gender = 0):
+    # Read in the data
+    surname = pd.read_excel('../' + source + 'prsurnames.xlsx')
+    match gender:
+        case 'm':
+            df = pd.read_excel('../' + source + 'prPER_boys.xlsx')
+        case 'f':
+            df = pd.read_excel('../' + source + 'prPER_girls.xlsx')
+    
+    # TODO
+    # Rename in data column Boys's names to name
+    first, middle = np.random.choice(a=df["name"], size=2, replace=False, p=df['probability'])
+    first = first.lower().capitalize()
+    middle = middle.lower().capitalize()
+
+    last = np.random.choice(a=surname["name"], size=1, replace=False, p=surname['probability'])[0]
+
+    full_name = f"{first} {middle} {last}"
+    return full_name
+
+def get_gender(name):
+    d = gender.Detector()
+    guess = d.get_gender(name)
+
+    if guess in ['male, mostly_male']:
+        return 'm'
+    elif guess in ['female, mostly_female']:
+        return 'f'
+    else:
+        return 'm' if round(random.random())  else 'f'
+
+        

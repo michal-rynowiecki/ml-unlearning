@@ -1,10 +1,13 @@
+# TODO make a function that reduces the doubling in the code. 
+
 from read_data.get_TOFU import obtain_file_path, line_to_dict
 from save_data.save_TOFU import dict_to_line, write_tofu
 
-from NER_recognition.find_entities import get_people, get_locations
+from NER_recognition.find_entities import get_people, get_locations, random_name, get_gender
 from write_translations.replacements import add_matching
 
 def replace_and_save(source_file, output_file, replacements_path):
+    source = 'data/da-entity-names/people/'
     # names that have already been assigned and cannot be used again
     used_persons = {}
     used_locs = {}
@@ -56,10 +59,15 @@ def replace_and_save(source_file, output_file, replacements_path):
                     
                     # Otherwise, assign a random city from list of cities 
                     if person['name'] not in used_persons:
-                        add_matching(used_persons, person['name'], 'data/da-entity-names/PER.txt')
+                        gender = get_gender(person['name'])
+                        new_name = random_name(source, gender)
+
+                        add_matching(used_persons, person['name'], new_name)
 
                     # Each time when changing a location or an entity, the length of the line changes
                     # , so its necassary to offset the start and end of the entity in the line
+                    
+                    # TODO - what is the issue with offsets? is the offset shared between new lines?
                     offset = len(line[key]) - len(new_line)
                     start_loc   = person['start_c'] - offset
                     finish_loc  = person['end_c'] - offset
