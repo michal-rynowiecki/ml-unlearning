@@ -18,6 +18,7 @@ def replace_and_save(source_file, output_file, replacements_path):
         while True:
             # This dictionary will serve as the new line in the new file with entities replaced
             build_replaced_line = {}
+
             # read a line from the source file
             line = line_to_dict(f.readline())
             if not line: 
@@ -26,7 +27,9 @@ def replace_and_save(source_file, output_file, replacements_path):
             # For every value in the dictionary from the json file single line iterate through
             # its text value and replace their contents
             for key in line:
+
                 new_line = line[key]
+
                 locations = get_locations(line[key])
                 persons = get_people(line[key])
 
@@ -40,11 +43,12 @@ def replace_and_save(source_file, output_file, replacements_path):
                     
                     # Otherwise, assign a random city from list of cities 
                     elif location['name'] not in used_locs:
-                        add_matching(used_locs, location['name'], 'data/da-entity-names/CITY.txt')
+                        add_matching(used_locs, location['name'], 'Aarhus')
 
                     # Each time when changing a location or an entity, the length of the line changes
                     # , so its necassary to offset the start and end of the entity in the line
                     offset = len(line[key]) - len(new_line)
+
                     start_loc   = location['start_c'] - offset
                     finish_loc  = location['end_c'] - offset
                     
@@ -68,7 +72,8 @@ def replace_and_save(source_file, output_file, replacements_path):
                     # , so its necassary to offset the start and end of the entity in the line
                     
                     # TODO - what is the issue with offsets? is the offset shared between new lines?
-                    offset = len(line[key]) - len(new_line)
+                    offset = abs(len(line[key]) - len(new_line))
+                    
                     start_loc   = person['start_c'] - offset
                     finish_loc  = person['end_c'] - offset
                     
@@ -78,9 +83,60 @@ def replace_and_save(source_file, output_file, replacements_path):
                 build_replaced_line[key] = new_line
 
             
-            print(build_replaced_line)
+
             line_to_write = dict_to_line(build_replaced_line) + '\n'
             write_tofu(line_to_write, 'rTOFU/rforget01.json')
 
 
-replace_and_save('TOFU/forget01.json', 'rTOFU/rforget01.json', 'data/da-entity-names/PER.txt')
+#replace_and_save('TOFU/forget01.json', 'rTOFU/rforget01.json', 'data/da-entity-names/PER.txt')
+
+# For each entry in the line dictionary
+# $ entry: line of text for which entities will be swapped
+# $ used_locs: dictionary of locations with which to replace
+def swap_locs(entry, used_locs):
+    locations = get_locations(entry)
+    new_line = entry
+    offset = 0
+
+    # Get replacements for locations
+    for location in locations:
+        if location['type'] == 'country':
+            used_locs[location['name']] = 'Denmark'
+        elif location['name'] not in used_locs:
+            add_matching(used_locs, location['name'], 'Aarhus')
+        
+    
+        start_loc   = location['start_c'] - offset
+        finish_loc  = location['end_c'] - offset
+
+        offset = len(location['name']) - len(used_locs[location['name']])
+        # Create the new line by cutting out the old entity and adding in the new one
+        new_line = new_line[:start_loc] + used_locs[location['name']] + new_line[finish_loc:]
+    
+    return new_line
+
+def swap_persons(entry, used_persons):
+    source = 'data/da-entity-names/people/'
+    persons = get_people(entry)
+    new_line = entry
+    offset = 0
+
+    for person in persons:
+        if person['name'] not in used_persons:
+            gender = get_gender(person['name'][0])
+            new_name = random_name(source, gender)
+            add_matching(used_persons, person['name'], new_name)
+        else:
+            new_name = used_persons[person['name']]
+
+        start_loc   = person['start_c'] - offset
+        finish_loc  = person['end_c'] - offset
+        # Create the new line by cutting out the old entity and adding in the new one
+        new_line = new_line[:start_loc] + used_persons[person['name']] + new_line[finish_loc:]
+
+        offset = offset + len(person['name']) - len(new_name)
+
+    return new_line
+
+print(swap_persons("Basil Mahfouz Al-Kuwaiti was born in Basil Mahfouz Al-Kuwaiti Kuwait City, Kuwait. Basil Mahfouz Al-Kuwaiti", {}))
+
