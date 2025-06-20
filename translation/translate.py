@@ -1,9 +1,6 @@
 from read_data.get_TOFU import obtain_file_path, line_to_dict
 from save_data.save_TOFU import dict_to_line, write_tofu
 
-from NER_recognition.find_entities import get_people, get_locations, random_name, get_gender, random_city
-from write_translations.replacements import add_matching
-
 def replace_and_save(source_file, output_file, replacements_path, perturbed = False):
     # names that have already been assigned and cannot be used again
 
@@ -24,20 +21,21 @@ def replace_and_save(source_file, output_file, replacements_path, perturbed = Fa
             # its text value and replace their contents
             for key in line:
                 print('BEFORE: ', line[key])
+
+                translated_key = translate(key)
                 # If the key is a list, go through each element and append them to the list
                 if type(line[key]) == list:
                     build_replaced_line[key] = []
-                    translated_key = translate(key)
                     for answer in line[key]:
-                        
-                        build_replaced_line[key].append(locs_changed)
+                        translated_answer = translate(answer)
+                        build_replaced_line[translated_key].append(translated_answer)
+                
                 # Else it has just a single value
                 else:
-                    people_changed  = swap_persons(line[key], used_persons, d)
-                    locs_changed    = swap_locs(people_changed, used_locs, source)
+                    translated_line = translate(line[key])
 
                     print('AFTER: ', locs_changed)
-                    build_replaced_line[key] = locs_changed
+                    build_replaced_line[translated_key] = translated_line
                 print(build_replaced_line)
 
             line_to_write = dict_to_line(build_replaced_line) + '\n'

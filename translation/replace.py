@@ -5,7 +5,6 @@ GUIDE
 
 Use the function replace and save with appropriate arguments to
 replace the entities from the source to the output
-
 '''
 
 from read_data.get_TOFU import obtain_file_path, line_to_dict
@@ -15,6 +14,8 @@ from NER_recognition.find_entities import get_people, get_locations, random_name
 from write_translations.replacements import add_matching
 
 import gender_guesser.detector as gender
+
+import os
 
 def replace_and_save(source_file, output_file, replacements_path):
     source = replacements_path
@@ -182,8 +183,14 @@ def replace_and_save_pert(source_file, output_file, replacements_path, perturbed
             
             return
 
-# print(swap_persons("Basil Mahfouz Al-Kuwaiti was born in Basil Mahfouz Al-Kuwaiti Kuwait City, Kuwait. Basil Mahfouz Al-Kuwaiti", {}))
 
+def replace_directory(input, output, data):
+    files = [item for item in os.listdir('../' + input) if not item[0] == '.' and not item == 'README.md']
+    
+    for file in files:
+        replace_and_save(input + '/' + file, output + '/r' + file, data)
 
-replace_and_save('TOFU/forget01_perturbed.json', 'test', 'data/da-entity-names/')
+replace_directory('TOFU', 'rTOFU', 'data/da-entity-names/')
+
+# replace_and_save('TOFU/forget01_perturbed.json', 'test', 'data/da-entity-names/')
 
