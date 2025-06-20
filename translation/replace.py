@@ -23,8 +23,9 @@ def replace_and_save(source_file, output_file, replacements_path):
             build_replaced_line = {}
 
             # read a line from the source file
-            line = line_to_dict(f.readline())
-            if not line: 
+            try:
+                line = line_to_dict(f.readline())
+            except:
                 return
             
             # For every value in the dictionary from the json file single line iterate through
@@ -40,8 +41,8 @@ def replace_and_save(source_file, output_file, replacements_path):
                 #print(build_replaced_line)
 
             line_to_write = dict_to_line(build_replaced_line) + '\n'
-            print('LINE TO WRITE: ', line_to_write)
-            #write_tofu(line_to_write, 'rTOFU/rforget01.json')
+            #print('LINE TO WRITE: ', line_to_write)
+            write_tofu(line_to_write, 'rTOFU/rforget01.json')
 
 # For each entry in the line dictionary
 # $ entry: line of text for which entities will be swapped
@@ -78,6 +79,13 @@ def swap_persons(entry, used_persons, gender_detector):
     offset = 0
 
     for person in persons:
+        '''
+        TODO
+        if persons last name in the matching keys
+            1. Get the key's values last name
+            2. Generate only the first names
+            3. Return the name
+        '''
         if person['name'] not in used_persons:
             gender = get_gender(person['name'].split()[0], gender_detector)
             new_name = random_name(source, gender)
@@ -94,7 +102,33 @@ def swap_persons(entry, used_persons, gender_detector):
 
     return new_line
 
+'''
+Check if the person to be replaced shares a last name
+with anyone in the already replaced people. If yes,
+return the previously replaced person's last name.
+This is created for the perturbed data set or in the case
+that there are family members.
+$ name -            name that is getting replaced
+$ used_persons -    dictionary of replacements
+'''
+def last_name(name: str, gender, used_persons: dict):
+    source = 'data/da-entity-names/people/'
+
+    last_name = name.split()[-1]
+    for existing_name in used_persons.keys():
+        if last_name in existing_name:
+            replacement_last_name = used_persons[existing_name].split()[-1]
+            new_name = random_name(source, gender, last_name=False) + ' ' + replacement_last_name
+            print(new_name)
+
+
+    #name.split()[-1]
+for i in range(100):
+    last_name('Basil Joshua Ashmadi-Al-Haran', 'm', {'Jessica Ashmadi-Al-Haran': 'Anna Smith', 'Albert Johns': 'Stone'})
+
+
 # print(swap_persons("Basil Mahfouz Al-Kuwaiti was born in Basil Mahfouz Al-Kuwaiti Kuwait City, Kuwait. Basil Mahfouz Al-Kuwaiti", {}))
 
-replace_and_save('TOFU/forget01.json', 'rTOFU/rforget01.json', 'data/da-entity-names/PER.txt')
+
+#replace_and_save('TOFU/forget01_perturbed.json', 'rTOFU/rforget01_perturbed.json', 'data/da-entity-names/PER.txt')
 

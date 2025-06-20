@@ -108,7 +108,7 @@ $ gender
     TODO
     n - other
 '''
-def random_name(source, gender = 0):
+def random_name(source, gender = 0, last_name=True):
     # Read in the data
     surname = pd.read_excel('../' + source + 'prsurnames.xlsx')
     match gender:
@@ -122,7 +122,7 @@ def random_name(source, gender = 0):
     middle = middle.lower().capitalize()
     middle2 = middle.lower().capitalize()
 
-    last, last2 = np.random.choice(a=surname["name"], size=2, replace=False, p=surname['probability'])[0]
+    last, last2 = np.random.choice(a=surname["name"], size=2, replace=False, p=surname['probability'])[0:2]
 
     # Determine the number of names:
     nm = random.random()
@@ -135,11 +135,20 @@ def random_name(source, gender = 0):
 
     match nm:
         case 3:
-            full_name = f"{first} {middle} {last}"
+            if last_name:
+                full_name = f"{first} {middle} {last}"
+            else:
+                full_name = f"{first} {middle}"
         case 2:
-            full_name = f"{first} {last}"
+            if last_name:
+                full_name = f"{first} {last}"
+            else:
+                full_name = f"{first}"
         case 4:
-            full_name = f"{first} {middle} {last}-{last2}"
+            if last_name:
+                full_name = f"{first} {middle} {last}-{last2}"
+            else:
+                full_name = f"{first} {middle}"
 
     return full_name
 
