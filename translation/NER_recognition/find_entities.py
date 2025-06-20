@@ -110,6 +110,7 @@ $ gender
 '''
 def random_name(source, gender = 0, last_name=True):
     # Read in the data
+    print(" THE PATH: " + '../' + source + 'people/prsurnames.xlsx')
     surname = pd.read_excel('../' + source + 'prsurnames.xlsx')
     match gender:
         case 'm':
@@ -152,6 +153,11 @@ def random_name(source, gender = 0, last_name=True):
 
     return full_name
 
+def random_city(source):
+    cities = pd.read_excel('../' + source + 'prPER_city.xlsx')
+    city = np.random.choice(a=cities["city"], size=1, replace=False, p=cities['probability'])[0]
+    return city
+
 def get_gender(name, detector):
     guess = detector.get_gender(name)
 
@@ -161,5 +167,3 @@ def get_gender(name, detector):
         return 'f'
     else:
         return 'm' if round(random.random())  else 'f'
-
-        
