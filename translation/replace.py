@@ -6,11 +6,14 @@ from save_data.save_TOFU import dict_to_line, write_tofu
 from NER_recognition.find_entities import get_people, get_locations, random_name, get_gender
 from write_translations.replacements import add_matching
 
+import gender_guesser.detector as gender
+
 def replace_and_save(source_file, output_file, replacements_path):
     source = 'data/da-entity-names/people/'
     # names that have already been assigned and cannot be used again
     used_persons = {}
     used_locs = {}
+    d = gender.Detector()
 
     source_path = obtain_file_path(source_file)
 
@@ -27,68 +30,18 @@ def replace_and_save(source_file, output_file, replacements_path):
             # For every value in the dictionary from the json file single line iterate through
             # its text value and replace their contents
             for key in line:
+                print('BEFORE: ', line[key])
 
-                new_line = line[key]
+                people_changed  = swap_persons(line[key], used_persons, d)
+                locs_changed    = swap_locs(people_changed, used_locs)
 
-                locations = get_locations(line[key])
-                persons = get_people(line[key])
-
-                # TODO make this a function
-                
-                # Add matchings for each of the locations in the line
-                for location in locations:
-                    # If location is a country then just assign Denmark to it
-                    if location['type'] == 'country':
-                        used_locs[location['name']] = 'Denmark'
-                    
-                    # Otherwise, assign a random city from list of cities 
-                    elif location['name'] not in used_locs:
-                        add_matching(used_locs, location['name'], 'Aarhus')
-
-                    # Each time when changing a location or an entity, the length of the line changes
-                    # , so its necassary to offset the start and end of the entity in the line
-                    offset = len(line[key]) - len(new_line)
-
-                    start_loc   = location['start_c'] - offset
-                    finish_loc  = location['end_c'] - offset
-                    
-                    # Create the new line by cutting out the old entity and adding in the new one
-                    new_line = new_line[:start_loc] + used_locs[location['name']] + new_line[finish_loc:]
-
-
-                # TODO make this into a function
-
-                # Add matchings for each of the locations in the line
-                for person in persons:
-                    
-                    # Otherwise, assign a random city from list of cities 
-                    if person['name'] not in used_persons:
-                        gender = get_gender(person['name'])
-                        new_name = random_name(source, gender)
-
-                        add_matching(used_persons, person['name'], new_name)
-
-                    # Each time when changing a location or an entity, the length of the line changes
-                    # , so its necassary to offset the start and end of the entity in the line
-                    
-                    # TODO - what is the issue with offsets? is the offset shared between new lines?
-                    offset = abs(len(line[key]) - len(new_line))
-                    
-                    start_loc   = person['start_c'] - offset
-                    finish_loc  = person['end_c'] - offset
-                    
-                    # Create the new line by cutting out the old entity and adding in the new one
-                    new_line = new_line[:start_loc] + used_persons[person['name']] + new_line[finish_loc:]
-
-                build_replaced_line[key] = new_line
-
-            
+                print('AFTER: ', locs_changed)
+                build_replaced_line[key] = locs_changed
+                #print(build_replaced_line)
 
             line_to_write = dict_to_line(build_replaced_line) + '\n'
-            write_tofu(line_to_write, 'rTOFU/rforget01.json')
-
-
-#replace_and_save('TOFU/forget01.json', 'rTOFU/rforget01.json', 'data/da-entity-names/PER.txt')
+            print('LINE TO WRITE: ', line_to_write)
+            #write_tofu(line_to_write, 'rTOFU/rforget01.json')
 
 # For each entry in the line dictionary
 # $ entry: line of text for which entities will be swapped
@@ -102,20 +55,23 @@ def swap_locs(entry, used_locs):
     for location in locations:
         if location['type'] == 'country':
             used_locs[location['name']] = 'Denmark'
-        elif location['name'] not in used_locs:
+        elif location['name'] not in used_locs and location['type'] == 'city':
             add_matching(used_locs, location['name'], 'Aarhus')
         
-    
-        start_loc   = location['start_c'] - offset
-        finish_loc  = location['end_c'] - offset
+        if location['type'] == 'country' or location['type'] == 'city':
+            start_loc   = location['start_c'] - offset
+            finish_loc  = location['end_c'] - offset
 
-        offset = len(location['name']) - len(used_locs[location['name']])
-        # Create the new line by cutting out the old entity and adding in the new one
-        new_line = new_line[:start_loc] + used_locs[location['name']] + new_line[finish_loc:]
+            offset = len(location['name']) - len(used_locs[location['name']])
+            # Create the new line by cutting out the old entity and adding in the new one
+            new_line = new_line[:start_loc] + used_locs[location['name']] + new_line[finish_loc:]
+        else:
+            1
+            #TODO
     
     return new_line
 
-def swap_persons(entry, used_persons):
+def swap_persons(entry, used_persons, gender_detector):
     source = 'data/da-entity-names/people/'
     persons = get_people(entry)
     new_line = entry
@@ -123,7 +79,7 @@ def swap_persons(entry, used_persons):
 
     for person in persons:
         if person['name'] not in used_persons:
-            gender = get_gender(person['name'][0])
+            gender = get_gender(person['name'].split()[0], gender_detector)
             new_name = random_name(source, gender)
             add_matching(used_persons, person['name'], new_name)
         else:
@@ -138,5 +94,7 @@ def swap_persons(entry, used_persons):
 
     return new_line
 
-print(swap_persons("Basil Mahfouz Al-Kuwaiti was born in Basil Mahfouz Al-Kuwaiti Kuwait City, Kuwait. Basil Mahfouz Al-Kuwaiti", {}))
+# print(swap_persons("Basil Mahfouz Al-Kuwaiti was born in Basil Mahfouz Al-Kuwaiti Kuwait City, Kuwait. Basil Mahfouz Al-Kuwaiti", {}))
+
+replace_and_save('TOFU/forget01.json', 'rTOFU/rforget01.json', 'data/da-entity-names/PER.txt')
 

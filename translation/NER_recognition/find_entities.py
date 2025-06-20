@@ -117,24 +117,38 @@ def random_name(source, gender = 0):
         case 'f':
             df = pd.read_excel('../' + source + 'prPER_girls.xlsx')
     
-    # TODO
-    # Rename in data column Boys's names to name
-    first, middle = np.random.choice(a=df["name"], size=2, replace=False, p=df['probability'])
+    first, middle, middle2 = np.random.choice(a=df["name"], size=3, replace=False, p=df['probability'])
     first = first.lower().capitalize()
     middle = middle.lower().capitalize()
+    middle2 = middle.lower().capitalize()
 
-    last = np.random.choice(a=surname["name"], size=1, replace=False, p=surname['probability'])[0]
+    last, last2 = np.random.choice(a=surname["name"], size=2, replace=False, p=surname['probability'])[0]
 
-    full_name = f"{first} {middle} {last}"
+    # Determine the number of names:
+    nm = random.random()
+    if nm <= 0.55:
+        nm = 3
+    elif nm <= 0.83:
+        nm = 2
+    else:
+        nm = 4
+
+    match nm:
+        case 3:
+            full_name = f"{first} {middle} {last}"
+        case 2:
+            full_name = f"{first} {last}"
+        case 4:
+            full_name = f"{first} {middle} {last}-{last2}"
+
     return full_name
 
-def get_gender(name):
-    d = gender.Detector()
-    guess = d.get_gender(name)
+def get_gender(name, detector):
+    guess = detector.get_gender(name)
 
-    if guess in ['male, mostly_male']:
+    if guess == 'male' or guess == 'mostly_male':
         return 'm'
-    elif guess in ['female, mostly_female']:
+    elif guess == 'female' or guess == 'mostly_female':
         return 'f'
     else:
         return 'm' if round(random.random())  else 'f'
