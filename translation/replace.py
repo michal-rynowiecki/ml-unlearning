@@ -31,7 +31,17 @@ def replace_and_save(source_file, output_file, replacements_path):
     source_path = obtain_file_path(source_file)
 
     with open(source_path, 'r') as f:
+        # Counter to reset the name dictionary
+        reset = 20
         while True:
+            # There are 20 questions per author, so to avoid mixing up the names, reset the name
+            # and loc dictionaries after the questions about a particular author are done
+            # This is mostly done to control for the first name only used in the answers, e.g.
+            # Q: Who is John Smith's mother? John's mother is Jessica
+            if reset == 0:
+                used_persons    = {}
+                used_locs       = {}
+                reset           = 20
             # This dictionary will serve as the new line in the new file with entities replaced
             build_replaced_line = {}
 
@@ -46,10 +56,6 @@ def replace_and_save(source_file, output_file, replacements_path):
             for key in line:
                 print('BEFORE: ', line[key])
                 # If the key is a list, go through each element and append them to the list
-                # TODO
-                # If the perturbed list contains famous people, try to detect that and do not
-                # change the famous person part of the name e.g. Marie Curie Al-Jazir should
-                # be changed to e.g. Marie Curie Jensen
                 if type(line[key]) == list:
                     build_replaced_line[key] = []
                     for answer in line[key]:
@@ -68,6 +74,9 @@ def replace_and_save(source_file, output_file, replacements_path):
             line_to_write = dict_to_line(build_replaced_line) + '\n'
             #print('LINE TO WRITE: ', line_to_write)
             write_tofu(line_to_write, output_file)
+
+            # Count to 20
+            reset -= 1
 
 '''
 Get a line and replace the locations in it
@@ -116,18 +125,20 @@ def swap_persons(entry, used_persons, source, gender_detector, model):
     offset = 0
 
     for person in persons:
-        '''
-        TODO
-        if persons last name in the matching keys
-            1. Get the key's values last name
-            2. Generate only the first names
-            3. Return the name
-        '''
-        if person['name'] not in used_persons:
+        # THE NORP should be a seperate category and possibly have a seperate function?
+        if person['type'] == "NORP":
+            add_matching(used_persons, person['name'], 'Danish')
+            new_name = 'Danish'
+
+        elif person['name'] not in used_persons:
             gender = get_gender(person['name'].split()[0], gender_detector)
 
+            # If the name is not in used persons dict, look if only the first name has been used
+            new_name: str = first_name_val(person['name'], gender, used_persons, source)
+
             # If the full name is not in the used persons dict, check for the last name
-            new_name: str = last_name_val(person['name'], gender, used_persons, source)
+            if not new_name:
+                new_name: str = last_name_val(person['name'], gender, used_persons, source)
 
             # If no one with the same last name exists, just create a full new name,
             # THIS IS THE DEFAULT CASE
@@ -164,6 +175,17 @@ def last_name_val(name: str, gender, used_persons: dict, source:str):
             new_name = random_name(source, gender, last_name=False) + ' ' + replacement_last_name
             return new_name
     return False
+
+# For all exising names in the dictionary, check if the current looked for name is part of a full name already
+# in the dictionary
+def first_name_val(looked_name, gender, used_persons, source):
+    # For every first name in the dictionary
+    for name in used_persons.keys():
+        first = name[0]
+        if first in looked_name:
+            return used_persons[name].split()[0]
+    return False
+
 
 
     #name.split()[-1]
@@ -209,5 +231,5 @@ def replace_directory(input, output, data):
 
 #replace_directory('TOFU', 'rTOFU', 'data/da-entity-names/')
 
-replace_and_save('TOFU/forget05_perturbed.json', 'rTOFU/rforget_perturbed.json', 'data/da-entity-names/')
+replace_and_save('TOFU/full.json', 'rTOFU/rfull.json', 'data/da-entity-names/')
 

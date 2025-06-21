@@ -27,6 +27,7 @@ def get_people(line: str, model) -> list:
     people = []
     # Go through each recognized entity
     for entity in doc.ents:
+        label = entity.label_
         # Only proceed if the entity is a person
         if entity.label_ == "PERSON":
             # Get required values from each recognized person
@@ -39,7 +40,14 @@ def get_people(line: str, model) -> list:
                 name = name[:-2]
                 end -= 2
 
-            people.append({"name": name, "start_c": start, "end_c": end})
+            people.append({"name": name, "start_c": start, "end_c": end, "type": label})
+        
+        elif entity.label == "NORP":
+            nationality = entity.text
+            start = entity.start_char
+            end = entity.end_char
+
+            people.append({"name": name, "start_c": start, "end_c": end, "type": label})
 
     # Return a tuple with the values
     return people
@@ -168,3 +176,54 @@ def get_gender(name, detector):
         return 'f'
     else:
         return 'm' if round(random.random())  else 'f'
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# WEIRD STUFF
+
+'''
+@TEST
+This is a test function to find non-regular entities in the data-set
+'''
+def get_locations_non_regular():
+    import json
+    def line_to_dict(line: str) -> dict:
+        line_dictionary = json.loads(line)
+        return line_dictionary
+
+    nlp = spacy.load("en_core_web_trf") # Change the NER model here
+    with open('../../TOFU/full.json', 'r') as f:
+        i = 0
+        while True:
+            i+=1
+            # This dictionary will serve as the new line in the new file with entities replaced
+            build_replaced_line = {}
+
+            # read a line from the source file
+            #try:
+            line = line_to_dict(f.readline())
+            #except:
+            #    return
+            
+            # For every value in the dictionary from the json file single line iterate through
+            # its text value and replace their contents
+            for key in line:
+                doc = nlp(line[key])
+
+                for entity in doc.ents:
+                    if entity.label_ not in  ['PERSON', 'CARDINAL', 'ORDINAL', 'DATE', 'WORK_OF_ART', 'GPE', 'NORP', 'LANGUAGE']:
+                        print(i, line, entity.text, entity.label_)

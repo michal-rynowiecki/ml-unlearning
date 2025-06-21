@@ -10,8 +10,4 @@ def translate(line, translator):
     text = line
     translated_text = translator(text)[0]['translation_text']
 
-    
-
-    # Translate to target language
-
-    tokenizer.tgt_language = target
+    return translated_text
