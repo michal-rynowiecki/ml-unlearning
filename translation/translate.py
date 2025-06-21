@@ -1,7 +1,7 @@
 from read_data.get_TOFU import obtain_file_path, line_to_dict
 from save_data.save_TOFU import dict_to_line, write_tofu
 
-def replace_and_save(source_file, output_file, replacements_path, perturbed = False):
+def translate_and_save(source_file, output_file, replacements_path, perturbed = False):
     # names that have already been assigned and cannot be used again
 
     source_path = obtain_file_path(source_file)

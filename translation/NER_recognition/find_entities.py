@@ -20,8 +20,8 @@ ORG: companies, agencies, institutions, etc.
 '''
 Creates a list of persons present in the line
 '''
-def get_people(line: str) -> list:
-    nlp = spacy.load("en_core_web_sm")
+def get_people(line: str, model) -> list:
+    nlp = model
     doc = nlp(line)
 
     people = []
@@ -48,8 +48,8 @@ def get_people(line: str) -> list:
 '''
 Creates a list of locations present in the line. Merges locations of type (city, country) into (city)
 '''
-def get_locations(line: str) -> list:
-    nlp = spacy.load("en_core_web_sm")
+def get_locations(line: str, model) -> list:
+    nlp = model
     doc = nlp(line)
     
 
@@ -119,6 +119,7 @@ def random_name(source, gender = 0, last_name=True):
             df = pd.read_excel('../' + source + 'prPER_girls.xlsx')
     
     first, middle, middle2 = np.random.choice(a=df["name"], size=3, replace=False, p=df['probability'])
+    print("FIRST: ", first)
     first = first.lower().capitalize()
     middle = middle.lower().capitalize()
     middle2 = middle.lower().capitalize()

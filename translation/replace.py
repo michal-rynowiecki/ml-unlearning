@@ -17,7 +17,11 @@ import gender_guesser.detector as gender
 
 import os
 
+import spacy
+
 def replace_and_save(source_file, output_file, replacements_path):
+    nlp = spacy.load("en_core_web_trf") # Change the NER model here
+
     source = replacements_path
     # names that have already been assigned and cannot be used again
     used_persons = {}
@@ -49,13 +53,13 @@ def replace_and_save(source_file, output_file, replacements_path):
                 if type(line[key]) == list:
                     build_replaced_line[key] = []
                     for answer in line[key]:
-                        people_changed  = swap_persons(answer, used_persons, d)
-                        locs_changed    = swap_locs(people_changed, used_locs, source)
+                        people_changed  = swap_persons(answer, used_persons, source, d, nlp)
+                        locs_changed    = swap_locs(people_changed, used_locs, source, nlp)
                         build_replaced_line[key].append(locs_changed)
                 # Else it has just a single value
                 else:
-                    people_changed  = swap_persons(line[key], used_persons, d)
-                    locs_changed    = swap_locs(people_changed, used_locs, source)
+                    people_changed  = swap_persons(line[key], used_persons, source, d, nlp)
+                    locs_changed    = swap_locs(people_changed, used_locs, source, nlp)
 
                     print('AFTER: ', locs_changed)
                     build_replaced_line[key] = locs_changed
@@ -65,11 +69,15 @@ def replace_and_save(source_file, output_file, replacements_path):
             #print('LINE TO WRITE: ', line_to_write)
             write_tofu(line_to_write, output_file)
 
-# For each entry in the line dictionary
-# $ entry: line of text for which entities will be swapped
-# $ used_locs: dictionary of locations with which to replace
-def swap_locs(entry, used_locs, source):
-    locations = get_locations(entry)
+'''
+Get a line and replace the locations in it
+
+$ entry:        line of text for which entities will be swapped
+$ used_locs:    dictionary of locations which were already replaced and their replacements
+$ source:       path with a list of cities
+'''
+def swap_locs(entry, used_locs, source, model):
+    locations = get_locations(entry, model)
     new_line = entry
     offset = 0
 
@@ -92,9 +100,18 @@ def swap_locs(entry, used_locs, source):
             #TODO figure out what to do with non city and non country locations
     return new_line
 
-def swap_persons(entry, used_persons, gender_detector):
-    source = 'data/da-entity-names/people/'
-    persons = get_people(entry)
+'''
+Swap persons in a sentence
+
+$ entry             - line of text for which the entities will be swapped
+$ used_persons      - dictionary of people already replaced and their replacements 
+$ source            - path with files containing names and their probabilities
+$ gender_detector   - gender detector object used for predicting the gender of a person
+$ model             - SpaCy model used for NER
+'''
+def swap_persons(entry, used_persons, source, gender_detector, model):
+    source = source + 'people/'
+    persons = get_people(entry, model)
     new_line = entry
     offset = 0
 
@@ -190,7 +207,7 @@ def replace_directory(input, output, data):
     for file in files:
         replace_and_save(input + '/' + file, output + '/r' + file, data)
 
-replace_directory('TOFU', 'rTOFU', 'data/da-entity-names/')
+#replace_directory('TOFU', 'rTOFU', 'data/da-entity-names/')
 
-# replace_and_save('TOFU/forget01_perturbed.json', 'test', 'data/da-entity-names/')
+replace_and_save('TOFU/forget05_perturbed.json', 'rTOFU/rforget_perturbed.json', 'data/da-entity-names/')
 
