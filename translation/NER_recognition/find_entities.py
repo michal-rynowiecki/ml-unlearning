@@ -105,6 +105,11 @@ def cities_countries(locations: list) -> list:
             location['type'] = 'country'
         elif location['name'] in cities:
             location['type'] = 'city'
+        # This is the case if it is a City, Country recognized as just the city
+        elif location['type'] == 'GPE':
+            actual_city = location['name'].split(',')[0]
+            location['name'] = actual_city
+            location['type'] = 'city'
 
     return locations
 
@@ -178,52 +183,3 @@ def get_gender(name, detector):
         return 'm' if round(random.random())  else 'f'
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# WEIRD STUFF
-
-'''
-@TEST
-This is a test function to find non-regular entities in the data-set
-'''
-def get_locations_non_regular():
-    import json
-    def line_to_dict(line: str) -> dict:
-        line_dictionary = json.loads(line)
-        return line_dictionary
-
-    nlp = spacy.load("en_core_web_trf") # Change the NER model here
-    with open('../../TOFU/full.json', 'r') as f:
-        i = 0
-        while True:
-            i+=1
-            # This dictionary will serve as the new line in the new file with entities replaced
-            build_replaced_line = {}
-
-            # read a line from the source file
-            #try:
-            line = line_to_dict(f.readline())
-            #except:
-            #    return
-            
-            # For every value in the dictionary from the json file single line iterate through
-            # its text value and replace their contents
-            for key in line:
-                doc = nlp(line[key])
-
-                for entity in doc.ents:
-                    if entity.label_ not in  ['PERSON', 'CARDINAL', 'ORDINAL', 'DATE', 'WORK_OF_ART', 'GPE', 'NORP', 'LANGUAGE']:
-                        print(i, line, entity.text, entity.label_)

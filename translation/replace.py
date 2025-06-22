@@ -14,11 +14,12 @@ from read_data.get_TOFU import obtain_file_path, line_to_dict
 from save_data.save_TOFU import dict_to_line, write_tofu
 
 from NER_recognition.find_entities import get_people, get_locations, random_name, get_gender, random_city
-from write_translations.replacements import add_matching
+from write_translations.replacements import add_matching, build_perturbed_line
 
 import gender_guesser.detector as gender
 
 import os
+import random
 
 import spacy
 
@@ -51,15 +52,20 @@ def replace_and_save(source_file, output_file, replacements_path):
             # read a line from the source file
             try:
                 line = line_to_dict(f.readline())
+                print(line)
             except:
                 return
             
             # For every value in the dictionary from the json file single line iterate through
             # its text value and replace their contents
             for key in line:
-                print(line[key])
+                p = random.random()
+                if key == 'perturbed_answer' and p <= 0.33:
+                    # Get a value that will determine if non-Danish entities should be the ones
+                    # in the perturbed list, in this case the threshold is 0.33 for non-danish names
+                        build_replaced_line[key] = build_perturbed_line(line[key], used_persons, used_locs, source, d, nlp)
                 # If the key is a list, go through each element and append them to the list
-                if type(line[key]) == list:
+                elif type(line[key]) == list:
                     build_replaced_line[key] = []
                     for answer in line[key]:
                         people_changed  = swap_persons(answer, used_persons, source, d, nlp)
@@ -67,6 +73,7 @@ def replace_and_save(source_file, output_file, replacements_path):
                         build_replaced_line[key].append(locs_changed)
                 # Else it has just a single value
                 else:
+                    print("LINE: line[key]")
                     people_changed  = swap_persons(line[key], used_persons, source, d, nlp)
                     locs_changed    = swap_locs(people_changed, used_locs, source, nlp)
 
@@ -90,16 +97,23 @@ $ source:       path with a list of cities
 '''
 def swap_locs(entry, used_locs, source, model):
     locations = get_locations(entry, model)
-    print(locations)
+    print('ENTRY: ', entry)
+    print('LOCATIONS: ', locations)
     new_line = entry
     offset = 0
 
     # Get replacements for locations
     for location in locations:
+        print('LOCATION: ', location, location['type'])
         if location['type'] == 'country':
             used_locs[location['name']] = 'Denmark'
         elif location['name'] not in used_locs and location['type'] == 'city':
             add_matching(used_locs, location['name'], random_city(source))
+        # In case a city and country were recognized as a single entity,
+        # replace it with a city and add Denmark after it
+        elif location['type'] == 'GEP' or location['type'] == 'GPE':
+            add_matching(used_locs, location['name'], random_city(source))
+            used_locs[location['name']] += ', Denmark'
         
         if location['type'] == 'country' or location['type'] == 'city':
             start_loc   = location['start_c'] - offset
@@ -111,6 +125,8 @@ def swap_locs(entry, used_locs, source, model):
         else:
             1
             #TODO figure out what to do with non city and non country locations
+
+    print('AFTER SWAP: ', new_line)
     return new_line
 
 '''
@@ -139,6 +155,7 @@ def swap_persons(entry, used_persons, source, gender_detector, model):
 
             # If the name is not in used persons dict, look if only the first name has been used
             new_name: str = first_name_val(person['name'], gender, used_persons, source)
+            print(new_name)
 
             # If the full name is not in the used persons dict, check for the last name
             if not new_name:
@@ -148,6 +165,8 @@ def swap_persons(entry, used_persons, source, gender_detector, model):
             # THIS IS THE DEFAULT CASE
             if not new_name:
                 new_name = random_name(source, gender)
+
+            
 
             add_matching(used_persons, person['name'], new_name)
         else:
@@ -185,8 +204,9 @@ def last_name_val(name: str, gender, used_persons: dict, source:str):
 def first_name_val(looked_name, gender, used_persons, source):
     # For every first name in the dictionary
     for name in used_persons.keys():
-        first = name[0]
-        if first in looked_name:
+        first = name.split()[0]
+
+        if first == looked_name.split()[0]:
             return used_persons[name].split()[0]
     return False
 
@@ -200,5 +220,5 @@ def replace_directory(input, output, data):
 
 #replace_directory('TOFU', 'rTOFU', 'data/da-entity-names/')
 
-replace_and_save('TOFU/full.json', 'rTOFU/rfull.json', 'data/da-entity-names/')
+replace_and_save('TOFU/forget05_perturbed.json', 'rTOFU/rforget05_perturbed.json', 'data/da-entity-names/')
 
