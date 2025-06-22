@@ -118,7 +118,7 @@ $ gender
 '''
 def random_name(source, gender = 0, last_name=True):
     # Read in the data
-    print(" THE PATH: " + '../' + source + 'people/prsurnames.xlsx')
+    
     surname = pd.read_excel('../' + source + 'prsurnames.xlsx')
     match gender:
         case 'm':
@@ -127,7 +127,7 @@ def random_name(source, gender = 0, last_name=True):
             df = pd.read_excel('../' + source + 'prPER_girls.xlsx')
     
     first, middle, middle2 = np.random.choice(a=df["name"], size=3, replace=False, p=df['probability'])
-    print("FIRST: ", first)
+    
     first = first.lower().capitalize()
     middle = middle.lower().capitalize()
     middle2 = middle.lower().capitalize()

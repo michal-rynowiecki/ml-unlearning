@@ -7,6 +7,9 @@ Use the function replace and save with appropriate arguments to
 replace the entities from the source to the output
 '''
 
+LINES_PER_AUTHOR            = 20
+NER_MODEL                   = "en_core_web_trf"
+
 from read_data.get_TOFU import obtain_file_path, line_to_dict
 from save_data.save_TOFU import dict_to_line, write_tofu
 
@@ -20,7 +23,7 @@ import os
 import spacy
 
 def replace_and_save(source_file, output_file, replacements_path):
-    nlp = spacy.load("en_core_web_trf") # Change the NER model here
+    nlp = spacy.load(NER_MODEL) # Change the NER model here
 
     source = replacements_path
     # names that have already been assigned and cannot be used again
@@ -32,16 +35,16 @@ def replace_and_save(source_file, output_file, replacements_path):
 
     with open(source_path, 'r') as f:
         # Counter to reset the name dictionary
-        reset = 20
+        reset = LINES_PER_AUTHOR
         while True:
-            # There are 20 questions per author, so to avoid mixing up the names, reset the name
+            # There are LINES_PER_AUTHOR questions per author, so to avoid mixing up the names, reset the name
             # and loc dictionaries after the questions about a particular author are done
             # This is mostly done to control for the first name only used in the answers, e.g.
             # Q: Who is John Smith's mother? John's mother is Jessica
             if reset == 0:
                 used_persons    = {}
                 used_locs       = {}
-                reset           = 20
+                reset           = LINES_PER_AUTHOR
             # This dictionary will serve as the new line in the new file with entities replaced
             build_replaced_line = {}
 
@@ -54,7 +57,7 @@ def replace_and_save(source_file, output_file, replacements_path):
             # For every value in the dictionary from the json file single line iterate through
             # its text value and replace their contents
             for key in line:
-                print('BEFORE: ', line[key])
+                print(line[key])
                 # If the key is a list, go through each element and append them to the list
                 if type(line[key]) == list:
                     build_replaced_line[key] = []
@@ -67,9 +70,9 @@ def replace_and_save(source_file, output_file, replacements_path):
                     people_changed  = swap_persons(line[key], used_persons, source, d, nlp)
                     locs_changed    = swap_locs(people_changed, used_locs, source, nlp)
 
-                    print('AFTER: ', locs_changed)
+                    
                     build_replaced_line[key] = locs_changed
-                print(build_replaced_line)
+                
 
             line_to_write = dict_to_line(build_replaced_line) + '\n'
             #print('LINE TO WRITE: ', line_to_write)
@@ -87,6 +90,7 @@ $ source:       path with a list of cities
 '''
 def swap_locs(entry, used_locs, source, model):
     locations = get_locations(entry, model)
+    print(locations)
     new_line = entry
     offset = 0
 
@@ -186,41 +190,6 @@ def first_name_val(looked_name, gender, used_persons, source):
             return used_persons[name].split()[0]
     return False
 
-
-
-    #name.split()[-1]
-
-
-
-def replace_and_save_pert(source_file, output_file, replacements_path, perturbed = False):
-    source = 'data/da-entity-names'
-    # names that have already been assigned and cannot be used again
-    used_persons = {}
-    used_locs = {}
-    d = gender.Detector()
-
-    source_path = obtain_file_path(source_file)
-
-    with open(source_path, 'r') as f:
-        while True:
-            # This dictionary will serve as the new line in the new file with entities replaced
-            build_replaced_line = {}
-            # read a line from the source file
-            try:
-                line = line_to_dict(f.readline())
-            except:
-                return
-
-            for key in line:
-                if key == 'perturbed_answer':
-                    build_replaced_line['perturbed_asnwer'] = []
-                    for answer in line[key]:
-                        people_changed  = swap_persons(answer, used_persons, d)
-                        locs_changed    = swap_locs(people_changed, used_locs)
-                        build_replaced_line['perturbed_asnwer'].append(locs_changed)
-                    print(build_replaced_line)
-            
-            return
 
 
 def replace_directory(input, output, data):
