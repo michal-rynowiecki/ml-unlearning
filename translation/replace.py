@@ -140,8 +140,9 @@ def swap_persons(entry, used_persons, source, gender_detector, model):
 
     for person in persons:
         print('line: ', entry)
-        print('Detected persons: ', persons)
+
         # THE NORP should be a seperate category and possibly have a seperate function?
+        print(f'Looking for {person['name']} in {persons}')
         if person['type'] == "NORP":
             add_matching(used_persons, person['name'], 'Danish')
             new_name = 'Danish'

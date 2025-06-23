@@ -50,7 +50,7 @@ def get_people(line: str, model) -> list:
             end = entity.end_char
 
             people.append({"name": name, "start_c": start, "end_c": end, "type": label})
-
+    print(people)
     # Return a tuple with the values
     return people
 
