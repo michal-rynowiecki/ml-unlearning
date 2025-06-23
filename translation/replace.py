@@ -52,7 +52,6 @@ def replace_and_save(source_file, output_file, replacements_path):
             # read a line from the source file
             try:
                 line = line_to_dict(f.readline())
-                print(line)
             except:
                 return
             
@@ -73,7 +72,6 @@ def replace_and_save(source_file, output_file, replacements_path):
                         build_replaced_line[key].append(locs_changed)
                 # Else it has just a single value
                 else:
-                    print("LINE: line[key]")
                     people_changed  = swap_persons(line[key], used_persons, source, d, nlp)
                     locs_changed    = swap_locs(people_changed, used_locs, source, nlp)
 
@@ -97,14 +95,11 @@ $ source:       path with a list of cities
 '''
 def swap_locs(entry, used_locs, source, model):
     locations = get_locations(entry, model)
-    print('ENTRY: ', entry)
-    print('LOCATIONS: ', locations)
     new_line = entry
     offset = 0
 
     # Get replacements for locations
     for location in locations:
-        print('LOCATION: ', location, location['type'])
         if location['type'] == 'country':
             used_locs[location['name']] = 'Denmark'
         elif location['name'] not in used_locs and location['type'] == 'city':
@@ -126,7 +121,6 @@ def swap_locs(entry, used_locs, source, model):
             1
             #TODO figure out what to do with non city and non country locations
 
-    print('AFTER SWAP: ', new_line)
     return new_line
 
 '''
@@ -145,6 +139,8 @@ def swap_persons(entry, used_persons, source, gender_detector, model):
     offset = 0
 
     for person in persons:
+        print('line: ', entry)
+        print('Detected persons: ', persons)
         # THE NORP should be a seperate category and possibly have a seperate function?
         if person['type'] == "NORP":
             add_matching(used_persons, person['name'], 'Danish')
@@ -220,5 +216,5 @@ def replace_directory(input, output, data):
 
 #replace_directory('TOFU', 'rTOFU', 'data/da-entity-names/')
 
-replace_and_save('TOFU/forget05_perturbed.json', 'rTOFU/rforget05_perturbed.json', 'data/da-entity-names/')
+replace_and_save('TOFU/test.json', 'rTOFU/rtest.json', 'data/da-entity-names/')
 
