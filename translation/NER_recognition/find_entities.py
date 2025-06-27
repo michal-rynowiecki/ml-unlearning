@@ -38,7 +38,7 @@ def get_people(line: str, model) -> list:
             # if entity ends with a possessive suffix ('s), remove it and change end char by -2
             if entity.text[-2:] == '\'s' or entity.text[-2:] == "’s" or entity.text[-2:] == "\u2019s":
                 name = name[:-2]
-                end -= 3
+                end -= 2
             if entity.text[-1:] == '\'':
                 name = name[:-1]
                 end -= 1
@@ -50,7 +50,7 @@ def get_people(line: str, model) -> list:
             end = entity.end_char
 
             people.append({"name": name, "start_c": start, "end_c": end, "type": label})
-    print(people)
+    print('PEOPLE: ', people)
     # Return a tuple with the values
     return people
 

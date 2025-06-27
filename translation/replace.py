@@ -23,29 +23,23 @@ import random
 
 import spacy
 
-def replace_and_save(source_file, output_file, replacements_path):
+def replace_and_save(used_persons, used_locs, source_file, output_file, replacements_path):
     nlp = spacy.load(NER_MODEL) # Change the NER model here
 
     source = replacements_path
     # names that have already been assigned and cannot be used again
-    used_persons = {}
-    used_locs = {}
+    
+    
     d = gender.Detector()
 
     source_path = obtain_file_path(source_file)
 
     with open(source_path, 'r') as f:
         # Counter to reset the name dictionary
-        reset = LINES_PER_AUTHOR
+        reset           = LINES_PER_AUTHOR
+        current_author  = None
+
         while True:
-            # There are LINES_PER_AUTHOR questions per author, so to avoid mixing up the names, reset the name
-            # and loc dictionaries after the questions about a particular author are done
-            # This is mostly done to control for the first name only used in the answers, e.g.
-            # Q: Who is John Smith's mother? John's mother is Jessica
-            if reset == 0:
-                used_persons    = {}
-                used_locs       = {}
-                reset           = LINES_PER_AUTHOR
             # This dictionary will serve as the new line in the new file with entities replaced
             build_replaced_line = {}
 
@@ -54,10 +48,26 @@ def replace_and_save(source_file, output_file, replacements_path):
                 line = line_to_dict(f.readline())
             except:
                 return
+
+            # If we went through all the lines about a particular author, reset the counter
+            if reset == 0:
+                reset = LINES_PER_AUTHOR
+                current_author = None
+
             
             # For every value in the dictionary from the json file single line iterate through
             # its text value and replace their contents
             for key in line:
+
+                # If we didnt assign the author described in the next #LINES_PER_AUTHOR lines,
+                # attempt to do that
+                if not current_author:
+                    try:
+                        current_author = get_people(line[key], nlp)[0]['name']
+                    except:
+                        1
+
+                print("current author: ", current_author)
                 p = random.random()
                 if key == 'perturbed_answer' and p <= 0.33:
                     # Get a value that will determine if non-Danish entities should be the ones
@@ -67,12 +77,12 @@ def replace_and_save(source_file, output_file, replacements_path):
                 elif type(line[key]) == list:
                     build_replaced_line[key] = []
                     for answer in line[key]:
-                        people_changed  = swap_persons(answer, used_persons, source, d, nlp)
+                        people_changed  = swap_persons(answer, used_persons, source, d, nlp, current_author)
                         locs_changed    = swap_locs(people_changed, used_locs, source, nlp)
                         build_replaced_line[key].append(locs_changed)
                 # Else it has just a single value
                 else:
-                    people_changed  = swap_persons(line[key], used_persons, source, d, nlp)
+                    people_changed  = swap_persons(line[key], used_persons, source, d, nlp, current_author)
                     locs_changed    = swap_locs(people_changed, used_locs, source, nlp)
 
                     
@@ -80,10 +90,10 @@ def replace_and_save(source_file, output_file, replacements_path):
                 
 
             line_to_write = dict_to_line(build_replaced_line) + '\n'
-            #print('LINE TO WRITE: ', line_to_write)
+
             write_tofu(line_to_write, output_file)
 
-            # Count to 20
+            # Count to LINES_PER_AUTHOR
             reset -= 1
 
 '''
@@ -132,17 +142,15 @@ $ source            - path with files containing names and their probabilities
 $ gender_detector   - gender detector object used for predicting the gender of a person
 $ model             - SpaCy model used for NER
 '''
-def swap_persons(entry, used_persons, source, gender_detector, model):
+def swap_persons(entry, used_persons, source, gender_detector, model, current_author):
     source = source + 'people/'
     persons = get_people(entry, model)
     new_line = entry
     offset = 0
 
     for person in persons:
-        print('line: ', entry)
 
         # THE NORP should be a seperate category and possibly have a seperate function?
-        print(f'Looking for {person['name']} in {persons}')
         if person['type'] == "NORP":
             add_matching(used_persons, person['name'], 'Danish')
             new_name = 'Danish'
@@ -151,8 +159,7 @@ def swap_persons(entry, used_persons, source, gender_detector, model):
             gender = get_gender(person['name'].split()[0], gender_detector)
 
             # If the name is not in used persons dict, look if only the first name has been used
-            new_name: str = first_name_val(person['name'], gender, used_persons, source)
-            print(new_name)
+            new_name: str = first_name_val(current_author, person['name'], gender, used_persons, source)
 
             # If the full name is not in the used persons dict, check for the last name
             if not new_name:
@@ -198,7 +205,13 @@ def last_name_val(name: str, gender, used_persons: dict, source:str):
 
 # For all exising names in the dictionary, check if the current looked for name is part of a full name already
 # in the dictionary
-def first_name_val(looked_name, gender, used_persons, source):
+def first_name_val(current_name, looked_name, gender, used_persons, source):
+    # If the current first name of the author is the same as the first name of who we are looking for, return
+    # the first name of the replacing name for the current author
+    current_first = current_name.split()[0]
+    if (current_name in used_persons.keys()) and looked_name.split()[0] == current_first:
+        return used_persons[current_name].split()[0]
+
     # For every first name in the dictionary
     for name in used_persons.keys():
         first = name.split()[0]
@@ -210,12 +223,12 @@ def first_name_val(looked_name, gender, used_persons, source):
 
 
 def replace_directory(input, output, data):
+    used_persons = {}
+    used_locs = {}
     files = [item for item in os.listdir('../' + input) if not item[0] == '.' and not item == 'README.md']
     
     for file in files:
-        replace_and_save(input + '/' + file, output + '/r' + file, data)
+        replace_and_save(used_persons, used_locs, input + '/' + file, output + '/r' + file, data)
 
-#replace_directory('TOFU', 'rTOFU', 'data/da-entity-names/')
-
-replace_and_save('TOFU/test.json', 'rTOFU/rtest.json', 'data/da-entity-names/')
+replace_directory('TOFU', 'rTOFU', 'data/da-entity-names/')
 
