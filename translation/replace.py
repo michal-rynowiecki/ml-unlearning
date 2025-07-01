@@ -13,7 +13,7 @@ NER_MODEL                   = "en_core_web_trf"
 from read_data.get_TOFU import obtain_file_path, line_to_dict
 from save_data.save_TOFU import dict_to_line, write_tofu
 
-from NER_recognition.find_entities import get_people, get_locations, random_name, get_gender, random_city
+from NER_recognition.find_entities import get_people, get_locations, get_awards, random_name, get_gender, random_city, random_award
 from write_translations.replacements import add_matching, build_perturbed_line
 
 import gender_guesser.detector as gender
@@ -23,7 +23,7 @@ import random
 
 import spacy
 
-def replace_and_save(used_persons, used_locs, source_file, output_file, replacements_path):
+def replace_and_save(used_awards, used_persons, used_locs, source_file, output_file, replacements_path):
     nlp = spacy.load(NER_MODEL) # Change the NER model here
 
     source = replacements_path
@@ -79,14 +79,18 @@ def replace_and_save(used_persons, used_locs, source_file, output_file, replacem
                     for answer in line[key]:
                         people_changed  = swap_persons(answer, used_persons, source, d, nlp, current_author)
                         locs_changed    = swap_locs(people_changed, used_locs, source, nlp)
+                        # awards_changed  = swap_awards(locs_changed, used_awards, source, nlp)
+
                         build_replaced_line[key].append(locs_changed)
                 # Else it has just a single value
                 else:
                     people_changed  = swap_persons(line[key], used_persons, source, d, nlp, current_author)
                     locs_changed    = swap_locs(people_changed, used_locs, source, nlp)
+                    # awards_changed  = swap_awards(locs_changed, used_awards, source, nlp)
 
                     
                     build_replaced_line[key] = locs_changed
+                    #build_replaced_line[key] = awards_changed
                 
 
             line_to_write = dict_to_line(build_replaced_line) + '\n'
@@ -151,8 +155,10 @@ def swap_persons(entry, used_persons, source, gender_detector, model, current_au
     for person in persons:
 
         # THE NORP should be a seperate category and possibly have a seperate function?
+        # Should it even be used?
         if person['type'] == "NORP":
-            add_matching(used_persons, person['name'], 'Danish')
+            # add_matching(used_persons, person['name'], 'Danish')
+            add_matching(used_persons, person['nationality'], 'Danish')
             new_name = 'Danish'
 
         elif person['name'] not in used_persons:
@@ -184,6 +190,29 @@ def swap_persons(entry, used_persons, source, gender_detector, model, current_au
         offset = offset + len(person['name']) - len(new_name)
 
     return new_line
+
+'''
+Detect and replace awards in the provided text line
+'''
+def swap_awards(entry, used_awards, source, model):
+    new_line = entry
+    offset = 0
+    awards = get_awards(entry, model)
+
+    for award in awards:
+        if award not in list(used_awards.keys()):
+            add_matching(used_awards, award['name'], random_award(source))
+
+        start_loc   = award['start_c'] - offset
+        finish_loc  = award['end_c'] - offset
+        offset = len(award['name']) - len(used_awards[award['name']])
+        
+        # Create the new line by cutting out the old entity and adding in the new one
+        new_line = new_line[:start_loc] + used_awards[award['name']] + new_line[finish_loc:]    
+    
+    return new_line
+
+
 
 '''
 Check if the person to be replaced shares a last name
@@ -223,12 +252,15 @@ def first_name_val(current_name, looked_name, gender, used_persons, source):
 
 
 def replace_directory(input, output, data):
-    used_persons = {}
-    used_locs = {}
+    used_persons    = {}
+    used_locs       = {}
+    used_awards     = {} 
+    
     files = [item for item in os.listdir('../' + input) if not item[0] == '.' and not item == 'README.md']
     
     for file in files:
-        replace_and_save(used_persons, used_locs, input + '/' + file, output + '/r' + file, data)
+        replace_and_save(used_awards, used_persons, used_locs, input + '/' + file, output + '/r' + file, data)
 
-replace_directory('TOFU', 'rTOFU', 'data/da-entity-names/')
+#replace_directory('TOFU', 'rTOFU', 'data/da-entity-names/')
 
+replace_and_save({}, {}, {}, 'TOFU/forget01_perturbed.json', 'rTOFU/rforget01_perturbed.json', 'data/da-entity-names/')
