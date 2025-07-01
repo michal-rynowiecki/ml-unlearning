@@ -5,6 +5,8 @@ from translator.translator import translate
 
 from transformers import pipeline
 
+import os
+
 # Adjust these to change the language
 
 SOURCE_LANGUAGE = "en"
@@ -13,7 +15,7 @@ MODEL           = "Helsinki-NLP/opus-mt-en-da"
 
 def translate_and_save(source_file, output_file):
 
-    model = pipeline(f"translation_{SOURCE_LANGUAGE}_to_{TARGET_LANGUAGE}", model=MODEL)
+    model = pipeline(f"translation_{SOURCE_LANGUAGE}_to_{TARGET_LANGUAGE}", model=MODEL, device = -1)
 
     # key translations, so that they don't have to be translated for every line, also perturbed is difficult to translated
     key_translations = {"question": "spørgsmål", 
@@ -40,7 +42,8 @@ def translate_and_save(source_file, output_file):
             # its text value and replace their contents
             for key in line:
 
-                translated_key = key_translations[key]
+                #translated_key = key_translations[key]
+                translated_key = key
                 # If the key is a list, go through each element and append them to the list
                 if type(line[key]) == list:
                     build_replaced_line[translated_key] = []
@@ -59,10 +62,12 @@ def translate_and_save(source_file, output_file):
             print('AFTER: ', line_to_write)
             write_tofu(line_to_write, output_file)
 
-def translate_directory(input, output, data):
+def translate_directory(input, output):
     files = [item for item in os.listdir('../' + input) if not item[0] == '.' and not item == 'README.md']
     
     for file in files:
-        translate_and_save(input + '/' + file, output + '/r' + file, data)
+        translate_and_save(input + '/' + file, output + '/t' + file)
 
-translate_and_save('rTOFU/rforget01_perturbed.json', 'tTOFU/tforget_perturbed01.json')
+#translate_and_save('rTOFU/rforget01.json', 'tTOFU/tforget.json')
+
+translate_directory('rTOFU', 'tTOFU')
