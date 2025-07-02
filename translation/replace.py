@@ -23,6 +23,8 @@ import random
 
 import spacy
 
+os.chdir('/home/miry/research-project/ml-unlearning/translation')
+
 def replace_and_save(used_awards, used_persons, used_locs, source_file, output_file, replacements_path):
     nlp = spacy.load(NER_MODEL) # Change the NER model here
 
@@ -256,11 +258,11 @@ def replace_directory(input, output, data):
     used_locs       = {}
     used_awards     = {} 
     
-    files = [item for item in os.listdir('../' + input) if not item[0] == '.' and not item == 'README.md']
+    files = [item for item in os.listdir('../' + input) if not item[0] == '.' and not item == 'README.md' and 'real' not in item and 'world' not in item]
     
     for file in files:
         replace_and_save(used_awards, used_persons, used_locs, input + '/' + file, output + '/r' + file, data)
 
-#replace_directory('TOFU', 'rTOFU', 'data/da-entity-names/')
+replace_directory('TOFU', 'r2TOFU', 'data/da-entity-names/')
 
-replace_and_save({}, {}, {}, 'testTOFU/forget01.json', 'testTOFU/outcome.json', 'data/da-entity-names/')
+#replace_and_save({}, {}, {}, 'testTOFU/forget01.json', 'testTOFU/outcome.json', 'data/da-entity-names/')
