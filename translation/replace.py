@@ -157,8 +157,8 @@ def swap_persons(entry, used_persons, source, gender_detector, model, current_au
         # THE NORP should be a seperate category and possibly have a seperate function?
         # Should it even be used?
         if person['type'] == "NORP":
-            # add_matching(used_persons, person['name'], 'Danish')
-            add_matching(used_persons, person['nationality'], 'Danish')
+        #     add_matching(used_persons, person['name'], 'Danish')
+        #    add_matching(used_persons, person['name'], 'Danish')
             new_name = 'Danish'
 
         elif person['name'] not in used_persons:
@@ -263,4 +263,4 @@ def replace_directory(input, output, data):
 
 #replace_directory('TOFU', 'rTOFU', 'data/da-entity-names/')
 
-replace_and_save({}, {}, {}, 'TOFU/forget01_perturbed.json', 'rTOFU/rforget01_perturbed.json', 'data/da-entity-names/')
+replace_and_save({}, {}, {}, 'testTOFU/forget01.json', 'testTOFU/outcome.json', 'data/da-entity-names/')

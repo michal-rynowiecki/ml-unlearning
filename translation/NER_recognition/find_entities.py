@@ -44,12 +44,13 @@ def get_people(line: str, model) -> list:
                 end -= 1
             people.append({"name": name, "start_c": start, "end_c": end, "type": label})
         
-        elif entity.label == "NORP":
-            nationality = entity.text
-            start = entity.start_char
-            end = entity.end_char
-
-            people.append({"name": name, "start_c": start, "end_c": end, "type": label})
+        #elif entity.label_ == "NORP":
+        #    nationality = entity.text
+        #    start = entity.start_char
+        #    end = entity.end_char
+        #    print(entity)
+        #    people.append({"name": nationality, "start_c": start, "end_c": end, "type": label})
+            
     print('PEOPLE: ', people)
     # Return a tuple with the values
     return people
@@ -89,6 +90,29 @@ def get_locations(line: str, model) -> list:
 
     return new_locations
 
+def get_awards(line: str, model) -> list:
+    nlp = model
+    doc = nlp(line)
+
+    awards = []
+    # Go through each recognized entity
+    for entity in doc.ents:
+        # Only proceed if the entity is an award
+        if entity.label_ == "WORK_OF_ART":
+            # Get required values from each recognized location
+            name    = entity.text
+            start   = entity.start_char
+            end     = entity.end_char
+            label   = entity.label_
+
+            # if entity ends with a possessive suffix ('s), remove it and change end char by -2
+            if entity.text[-2:] == '\'s':
+                name = name[:-2]
+                end -= 2
+
+            awards.append({"name": name, "type": label, "start_c": start, "end_c": end})
+
+    return awards
 
 '''
 Takes in a list of locations and detects if two locations are within a space of
@@ -173,6 +197,11 @@ def random_city(source):
     cities = pd.read_excel('../' + source + 'prPER_city.xlsx')
     city = np.random.choice(a=cities["city"], size=1, replace=False, p=cities['probability'])[0]
     return city
+
+def random_award(source):
+    awards = pd.read_excel('../' + source + 'awards.xlsx')
+    award = np.random.choice(a=awards["name"], size=1, replace=False)[0]
+    return award
 
 def get_gender(name, detector):
     guess = detector.get_gender(name)
