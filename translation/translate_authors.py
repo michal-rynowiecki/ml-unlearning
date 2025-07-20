@@ -7,6 +7,8 @@ from transformers import pipeline
 
 import os
 
+os.chdir('/home/miry/research-project/ml-unlearning/translation')
+
 # Adjust these to change the language
 
 SOURCE_LANGUAGE = "en"
@@ -38,7 +40,7 @@ def translate_and_save(source_file, output_file):
                 translated_key = key
                 # Since the answers are only names, dont translate them.
                 if key != "question":
-                    build_replaced_line[translated_key] = line
+                    build_replaced_line[translated_key] = line[key]
                 
                 # Else it has just a single value
                 else:
@@ -56,6 +58,6 @@ def translate_directory(input, output):
     for file in files:
         translate_and_save(input + '/' + file, output + '/t' + file)
 
-translate_and_save('TOFU/real_authors.json', 't2TOFU/authors/real_authors.json')
+translate_and_save('TOFU/real_authors_perturbed.json', 't2TOFU/authors/real_authors_perturbed.json')
 
 #translate_directory('rTOFU', 'tTOFU')
